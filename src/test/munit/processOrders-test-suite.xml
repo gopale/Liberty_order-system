@@ -1,18 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule 
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  	xmlns:mock="http://www.mulesoft.org/schema/mule/mock" 
-	xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
-	xmlns="http://www.mulesoft.org/schema/mule/core" 
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
-	xmlns:spring="http://www.springframework.org/schema/beans" 
-	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/mock http://www.mulesoft.org/schema/mule/mock/current/mule-mock.xsd
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:core="http://www.mulesoft.org/schema/mule/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
 http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
-http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd">
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
     <munit:config name="munit" doc:name="MUnit configuration"/>
-    
     <spring:beans>
         <spring:import resource="classpath:order-system.xml"/>
     </spring:beans>
@@ -21,5 +12,21 @@ http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/mu
         <flow-ref name="processOrders" doc:name="processOrders"/>
         <munit:assert-true message="Failed...expected payload type to be Java Map, but found #[payload.getClass().getName()] instead!!" condition="#[payload is java.util.Map]" doc:name="Assert/Verify True: Payload datatype is Java Map"/>
         <munit:assert-on-equals message="Failed....expected payload to contain two key/value pairs but found #[payload.size()] key/value pairs instead!!" expectedValue="#[2]" actualValue="#[payload.size()]" doc:name="Assert Equals: payload contains International &amp; Domestic as two key/value pairs"/>
+    </munit:test>
+    <munit:test name="processOrders_internationalKeyContainsWorldwideOrders" description="Calling processOrders flow returns payload containing Worldwide orders when key is international">
+        <munit:set payload="#[[{'orderID':444, 'location':'worldwide','price':44.04}, {'orderID':555, 'location':'worldwide','price':55.05}]]" doc:name="Set Message: payload contains Worldwide orders only"/>
+        <flow-ref name="processOrders" doc:name="processOrders"/>
+        <munit:assert-true message="Failed....payload's international key has NO rows" condition="#[payload.'international'.size() &gt; 0]" doc:name="Assert True: Payload's international key has some rows"/>
+        <foreach collection="#[payload.'international']" doc:name="For Each: row in international key">
+            <munit:assert-on-equals message="Failed....expected location to be worldwide, but found #[payload.'location'] instead!!" expectedValue="#['worldwide']" actualValue="#[payload.'location']" doc:name="Assert Equals: location = worldwide"/>
+        </foreach>
+    </munit:test>
+    <munit:test name="processOrders_domesticKeyContainsNationalOrders" description="Calling processOrders flow returns payload containing National orders when key is domestic">
+        <munit:set payload="#[[{'orderID':444, 'location':'worldwide','price':44.04}, {'orderID':555, 'location':'worldwide','price':55.05}, {'orderID':333, 'location':'national','price':33.03}]]" doc:name="Set Message: payload contains Worldwide and National orders"/>
+        <flow-ref name="processOrders" doc:name="processOrders"/>
+        <munit:assert-true message="Failed....payload's domestic key has NO rows" condition="#[payload.'domestic'.size() &gt; 0]" doc:name="Assert True: Payload's domestic key has some rows"/>
+        <foreach collection="#[payload.'domestic']" doc:name="For Each: row in domestic key">
+            <munit:assert-on-equals message="Failed....expected location to be national , but found #[payload.'location'] instead!!" expectedValue="#['national']" actualValue="#[payload.'location']" doc:name="Assert Equals: location = national"/>
+        </foreach>
     </munit:test>
 </mule>
